@@ -1,0 +1,28 @@
+!!!
+%html(ng-app="SwfInvestigator")
+  %head
+    %title= current_page.data.title || 'SWF Investigator'
+    = stylesheet_link_tag "styles", :media => "all"
+    = csrf_meta_tags
+  %body
+    %nav.navbar.navbar-inverse{role: "navigation"}
+      .container
+        .navbar-header
+          %button.navbar-toggle(data-target=".navbar-actions-collapse" data-toggle="collapse" type="button")
+            %span.sr-only Toggle navigation
+            %span.icon-bar
+            %span.icon-bar
+            %span.icon-bar
+          = link_to 'SWF Investigator', '/', class: 'navbar-brand'
+        .collapse.navbar-collapse.navbar-actions-collapse
+          %ul.nav.navbar-nav
+            %li.active= link_to 'Load Workflow', '#'
+            %li= link_to 'About', '#'
+
+    .container
+      = yield
+
+    #footer
+
+    = javascript_include_tag '//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.js'
+    = javascript_include_tag "application"

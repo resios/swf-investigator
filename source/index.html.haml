@@ -1,0 +1,28 @@
+---
+---
+
+.container(ng-controller='MainCtrl')
+  %h1 SWF Investigator
+
+  %p
+    To begin load the JSON serialized workflow history
+    %span.btn.btn-default.btn-file
+      %input(type='file' onchange='angular.element(this).scope().loadInput(this.files)') Load file
+
+  %div
+    Contents: {{ctx.inputHistory.length}} {{ctx.history.length}}
+
+  .row
+    .col-md-6
+      %table.table.table-hover.table-bordered.table-condensed
+        %thead
+          %tr
+            %td Id
+            %td Type
+            %td Timestamp
+        %tbody
+          %tr(ng-repeat="event in ctx.history" ng-click="updateDetails($index)")
+            %td {{event.eventId}}
+            %td {{event.eventType}}
+            %td {{event.eventTimestamp}}
+    %pre.col-md-6(ng-show="currentEvent" ng-bind-html="currentEvent | prettyPrint")
