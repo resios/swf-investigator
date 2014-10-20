@@ -1,3 +1,4 @@
+@import "_bootstrap-sprockets"
 @import 'bootstrap'
 
 .btn-file
@@ -29,3 +30,45 @@
   color: magenta
 .js-key
   color: red
+
+.timestamp
+  @extend .badge
+  float: right
+
+.swf-event
+  font-weight: bold
+
+.entry:hover
+  cursor: pointer
+
+.entry > .data
+  cursor: text
+
+.chart
+  font-family: Arial, sans-serif
+  font-size: 12px
+
+.axis
+  path, line
+    fill: none
+    stroke: #000
+    shape-rendering: crispEdges
+
+.gnatt-label
+  fill: #ffffff
+  stroke-width: 10px
+
+.gantt-line
+  stroke: #F00054
+  stroke-width: 2px
+  z-index: 999
+
+.gantt-rect
+  fill: blue
+
+  &.timer
+    fill: organge
+  &.activity
+    fill: green
+  &.decision
+    fill: red

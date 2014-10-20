@@ -1,28 +1,33 @@
 ---
 ---
 
-.container(ng-controller='MainCtrl')
-  %h1 SWF Investigator
+.container-fluid(ng-controller='MainCtrl')
 
-  %p
-    To begin load the JSON serialized workflow history
-    %span.btn.btn-default.btn-file
-      %input(type='file' onchange='angular.element(this).scope().loadInput(this.files)') Load file
+  .jumbotron
+    %h1 SWF Investigator
 
-  %div
-    Contents: {{ctx.inputHistory.length}} {{ctx.history.length}}
+    %p
+      To begin load the JSON serialized workflow history
+    %p
+      %span.btn.btn-primary.btn-lg.btn-file
+        %span.glyphicon.glyphicon-upload
+        %input(type='file' onchange='angular.element(this).scope().loadInput(this.files)') Load file
 
-  .row
-    .col-md-6
-      %table.table.table-hover.table-bordered.table-condensed
-        %thead
-          %tr
-            %td Id
-            %td Type
-            %td Timestamp
-        %tbody
-          %tr(ng-repeat="event in ctx.history" ng-click="updateDetails($index)")
-            %td {{event.eventId}}
-            %td {{event.eventType}}
-            %td {{event.eventTimestamp}}
-    %pre.col-md-6(ng-show="currentEvent" ng-bind-html="currentEvent | prettyPrint")
+  .history-chart(gantt-chart data='tasks')
+  %pre.hidden
+    {{tasks.tasks.length}}
+    {{tasks | json}}
+
+  .panel.panel-default
+    .panel-heading
+      Workflow summary: {{ctx.history.length}} events ({{ctx.inputHistory.length}} bytes)
+
+    .panel-body
+      %ul.list-group
+        %li.entry.list-group-item(href="" ng-repeat="event in ctx.history" ng-click="updateDetails($index)")
+          .list-group-item-heading
+            %span.caret
+            %div(swf-event="event.eventType")
+            %span(swf-timestamp="event.eventTimestamp")
+          %pre.list-item-group-text.data.pre-scrollable(ng-show="$index == ctx.currentIndex" ng-bind-html="ctx.currentEvent | prettyPrint" ng-click="$event.stopPropagation();")
+
