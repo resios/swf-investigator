@@ -13,21 +13,63 @@
         %span.glyphicon.glyphicon-upload
         %input(type='file' onchange='angular.element(this).scope().loadInput(this.files)') Load file
 
-  .history-chart(gantt-chart data='tasks')
-  %pre.hidden
-    {{tasks.tasks.length}}
-    {{tasks | json}}
-
-  .panel.panel-default
-    .panel-heading
-      Workflow summary: {{ctx.history.length}} events ({{ctx.inputHistory.length}} bytes)
-
-    .panel-body
-      %ul.list-group
-        %li.entry.list-group-item(href="" ng-repeat="event in ctx.history" ng-click="updateDetails($index)")
-          .list-group-item-heading
-            %span.caret
-            %div(swf-event="event.eventType")
-            %span(swf-timestamp="event.eventTimestamp")
-          %pre.list-item-group-text.data.pre-scrollable(ng-show="$index == ctx.currentIndex" ng-bind-html="ctx.currentEvent | prettyPrint" ng-click="$event.stopPropagation();")
+  %tabset
+    %tab(heading="Timeline" select="chartVisible=true;" deselect="chartVisible=false;")
+      .history-chart(gantt-chart data='tasks' visible='chartVisible')
+    %tab(heading="Event log")
+      .panel.panel-default
+        .panel-heading
+          Workflow summary: {{ctx.history.length}} events ({{ctx.inputHistory.length}} bytes)
+        .panel-body
+          .input-group
+            .input-group-addon Filter by
+            -#.input-group-btn(dropdown is-open="status.isopen")
+              %button.btn.brn-primary(dropdown-toggle)
+                Filter by
+                %span.caret
+              %ul.dropdown-menu(role="menu")
+                %li
+                  %a Any field
+                %li
+                  %a Event type
+            %input.form-control(type="text" placeholder="Text to match" ng-model="search.$")
+          %ul.list-group
+            %li.entry.list-group-item(href="" ng-repeat="event in ctx.history | filter:search" ng-click="showDetails = !showDetails")
+              .list-group-item-heading
+                %span.caret
+                %div(swf-event="event.eventType")
+                %span(swf-timestamp="event.eventTimestamp")
+              %pre.list-item-group-text.data.pre-scrollable(ng-show="showDetails" ng-click="$event.stopPropagation();" event-view obj='event')
+    %tab(heading="Activity log")
+      .panel.panel-default
+        .panel-heading
+          Activity summary: {{activities.length}} activities
+        .panel-body
+          .input-group
+            .input-group-addon Filter by
+            %input.form-control(type="text" placeholder="Text to match" ng-model="activitySearch.activityType")
+          %ul.list-group
+            %li.activity.list-group-item(href="" ng-repeat="activity in activities | filter:activitySearch" ng-click="showDetails = !showDetails")
+              .list-group-item-heading
+                %span.caret
+                %span {{activity.activityType.name}}
+              .list-item-group-text(ng-show="showDetails" ng-click="$event.stopPropagation();")
+                %tabset
+                  %tab(heading="Summary")
+                    %ul
+                      %li Name {{activity.activityType.name}}
+                      %li Version {{activity.activityType.version}}
+                      %li Tasklist {{activity.taskList.name}}
+                      %li Activity worker {{activity.identity}}
+                      %li Schedule date {{activity.scheduleDate | date:'yyyy-MM-dd HH:mm:ss Z'}}
+                      %li Start date {{activity.startDate | date:'yyyy-MM-dd HH:mm:ss Z'}}
+                      %li End date {{activity.endDate | date:'yyyy-MM-dd HH:mm:ss Z'}}
+                  %tab(heading="Input")
+                    %pre.data.pre-scrollable(event-view obj="activity.input")
+                  %tab(heading="Output")
+                    %pre.data.pre-scrollable(event-view obj="activity.result")
+              -#%pre.list-item-group-text.data.pre-scrollable(ng-show="showDetails" ng-click="$event.stopPropagation();" event-view obj='activity')
+      %pre.hidden
+        {{activities.length}}
+        {{activities | json}}
 

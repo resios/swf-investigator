@@ -1,12 +1,13 @@
 //= require angular
 //= require angular-sanitize
+//= require ui-bootstrap-tpls-0.11.2
 //= require gantt-chart-d3
 //
 //= require file-service
 //
 
 (function(){
-    var app = angular.module('SwfInvestigator',['SwfHelpers','Gantt']);
+    var app = angular.module('SwfInvestigator',['ui.bootstrap','SwfHelpers','Gantt']);
 
     app.controller('MainCtrl',[
       '$scope', 'FileReader', 'HistoryTransformer', 'EventTransformer',
@@ -39,14 +40,15 @@
             {"startDate":new Date("Sun Dec 09 12:27:15 EST 2012"),"endDate":new Date("Sun Dec 09 12:54:56 EST 2012"),"taskName":"E Job","status":"SUCCEEDED"},
             {"startDate":new Date("Sat Dec 08 23:12:24 EST 2012"),"endDate":new Date("Sun Dec 09 00:26:13 EST 2012"),"taskName":"A Job","status":"KILLED"}];
         var taskNames = [ "D Job", "P Job", "E Job", "A Job", "N Job", "default" ];
-        $scope.tasks = {tasks:[], taskTypes: [], taskNames: []};
+        $scope.tasks = {tasks: tasks, taskTypes: taskNames, taskNames: taskNames};
         $scope.loadInput = function(files){
 
             fileReader.readAsText(files[0], $scope).then(function(data){
-                $scope.ctx.inputHistory = data;
-                // parse and show history
-                $scope.ctx.history = historyTransformer.fromJson(data);
+              $scope.ctx.inputHistory = data;
+              // parse and show history
+              $scope.ctx.history = historyTransformer.fromJson(data);
               $scope.tasks = eventTransformer.fromHistory($scope.ctx.history);
+              $scope.activities = eventTransformer.extractActivities($scope.tasks);
             })
         }
         $scope.updateDetails = function(index){
