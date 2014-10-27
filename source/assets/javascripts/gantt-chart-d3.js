@@ -6,177 +6,162 @@
 // http://protembla.com/swimlane.html
 (function(){
   angular.module('Gantt',[])
-   .factory('d3Service',[function(){return window.d3;}])
-   .directive('ganttChart', ['d3Service', function (d3){
+  .factory('d3Service',[function(){return window.d3;}])
+  .directive('ganttChart', ['d3Service', function (d3){
 
-      var linker = function(scope, elem, attrs){
-        var margin = {
-          top: 20,
-          right: 10,
-          bottom: 20,
-          left: 10
-        };
+    var linker = function(scope, elem, attrs){
+      var margin = {top: 10, right: 10, bottom: 100, left: 40},
+      margin2 = {top: 430, right: 10, bottom: 20, left: 40},
+      height = 500 - margin.top - margin.bottom,
+      height2 = 500 - margin2.top - margin2.bottom;
 
-        var width;
-        var height = 500 - margin.top - margin.bottom - 5;
-        var height2 = 500 - margin.top - margin.bottom - 5;
+      scope.$watch('data', function(value){
+        if(value && value.tasks.length > 0){
+          clean();
+          scope.taskTypes = value.taskTypes || [];
+          scope.tasks = value.tasks || [];
+          draw();
+        }
+      });
+      scope.$watch('visible', function(visible){
+        var newWidth = d3.select(elem[0])[0][0].offsetWidth - margin.left - margin.right;
+        if(visible && scope.width != newWidth){
+          clean();
+          draw();
+        }
+      });
 
-        scope.$watch('data', function(value){
-          if(value && value.tasks.length > 0){
-            clean();
-            taskTypes = value.taskTypes || [];
-            tasks = value.tasks || [];
-            init();
-            draw();
-          }
+      var clean = function(){
+        d3.select(elem[0]).selectAll('*').remove();
+      }
+
+      var initTimeDomain = function() {
+        if (scope.tasks === undefined || scope.tasks.length < 1) {
+          scope.timeDomainStart = d3.time.day.offset(new Date(), -3);
+          scope.timeDomainEnd = d3.time.hour.offset(new Date(), +3);
+          return;
+        }
+        scope.tasks.sort(function(a, b) {
+          return a.endDate - b.endDate;
         });
-        scope.$watch('visible', function(visible){
-          if(visible){
-            clean();
-            init();
-            draw();
-          }
+        scope.timeDomainEnd = scope.tasks[scope.tasks.length - 1].endDate;
+        scope.tasks.sort(function(a, b) {
+          return a.startDate - b.startDate;
         });
+        scope.timeDomainStart = scope.tasks[0].startDate;
+      };
 
-        var clean = function(){
-          d3.select(elem[0]).selectAll('*').remove();
+      var keyFunction = function(d) {
+        d = d || {};
+        return d.startDate + d.taskName + d.endDate;
+      };
+
+      var draw = function(){
+        var width = d3.select(elem[0])[0][0].offsetWidth - margin.left - margin.right;
+
+        if(width < 0){
+          return;
         }
 
-        var init = function(){
-          width = d3.select(elem[0])[0][0].offsetWidth - 5;
-          x = d3.time.scale().range([ 0, width ]).clamp(true);
-          y = d3.scale.ordinal().rangeRoundBands([ 0, height - margin.top - margin.bottom ], 0.1);
-          xAxis = d3.svg.axis().scale(x).orient("bottom").tickFormat(tickFormat).tickSubdivide(true)
-            .tickSize(8).tickPadding(16);
-        }
+        scope.x  = d3.time.scale().range([ 0, width ]).clamp(true);
+        scope.x2 = d3.time.scale().range([0, width ]).clamp(true);
+        scope.y  = d3.scale.ordinal().rangeRoundBands([0, height], 0.1);
+        scope.y2 = d3.scale.ordinal().rangeRoundBands([0, height2], 0.1);
 
-        var taskTypes = [];
-        var tasks = [];
+        scope.xAxis = d3.svg.axis().scale(scope.x).orient("bottom");
+        scope.xAxis2 = d3.svg.axis().scale(scope.x2).orient("bottom");
 
-        var timeDomainStart = d3.time.day.offset(new Date(),-3);
-        var timeDomainEnd = d3.time.hour.offset(new Date(),+3);
+        var display = function(){
+          scope.x.domain(scope.brush.empty() ? scope.x2.domain() : scope.brush.extent());
+          var s = scope.x.domain();
 
-        var x
-        var y;
+          var visItems = scope.tasks.filter(function(d){return d.startDate < s[1] || d.endDate > s[0];});
 
-        var xAxis;
+          focus.select(".x.axis").call(scope.xAxis);
 
-        var initTimeDomain = function(tasks) {
-          if (tasks === undefined || tasks.length < 1) {
-            timeDomainStart = d3.time.day.offset(new Date(), -3);
-            timeDomainEnd = d3.time.hour.offset(new Date(), +3);
-            return;
-          }
-          tasks.sort(function(a, b) {
-            return a.endDate - b.endDate;
-          });
-          timeDomainEnd = tasks[tasks.length - 1].endDate;
-          tasks.sort(function(a, b) {
-            return a.startDate - b.startDate;
-          });
-          timeDomainStart = tasks[0].startDate;
-        };
+          var bar = focus.selectAll('.gantt-rect').data(visItems, keyFunction)
+          .attr("x", function(d){return scope.x(d.startDate);})
+          .attr("width", function(d){return scope.x(d.endDate) - scope.x(d.startDate);});
 
-        var keyFunction = function(d) {
-          d = d || {};
-          return d.startDate + d.taskName + d.endDate;
-        };
-
-        var rectTransform = function(d) {
-          return "translate(" + x(d.startDate) + "," + y(d.taskName) + ")";
-        };
-
-        var eventWidth = function(d){
-          var width = x(d.endDate || maxTimeDomain) - x(d.startDate || minTimeDomain);
-          return Math.max(1, width);
-        }
-
-        var timeDomain = function(value) {
-          if (!arguments.length)
-            return [ timeDomainStart, timeDomainEnd ];
-          timeDomainStart = new Date(value[0]), timeDomainEnd = new Date(value[1]);
-          timeDomainStart = timeDomainStart < minTimeDomain ? minTimeDomain : timeDomainStart;
-          timeDomainEnd = timeDomainEnd > maxTimeDomain ? maxTimeDomain : timeDomainEnd;
-        };
-
-        var tickFormat = function(t){
-          //  max - min -> duration => define format
-          var diff = timeDomainEnd - timeDomainStart;
-          var format = "";
-          if(diff > 3 * 24 * 3600){
-            format = "%Y-%m-%d";
-          } else {
-            format = "%H:%M:%S";
-          }
-          return d3.time.format(format)(t);
-        };
-
-        var draw = function(){
-          initTimeDomain(tasks);
-          minTimeDomain = timeDomainStart;
-          maxTimeDomain = timeDomainEnd;
-          if(width < 0 || height <0){
-            return;
-          }
-
-          x = d3.time.scale().domain([ timeDomainStart, timeDomainEnd ]).range([ 0, width ]).clamp(true);
-          y = d3.scale.ordinal().domain(taskTypes).rangeRoundBands([ 0, height - margin.top - margin.bottom ], 0.1);
-
-        var svg = d3.select(elem[0]).append('svg')
-          .attr('class', 'chart')
-          .attr('height', height + margin.top + margin.bottom)
-          .attr('width', width);
-
-          svg.append('rect')
-            .attr("width", width)
-            .attr("height", height + margin.top + margin.bottom)
-            .style("fill", "none")
-            .style("cursor", "move")
-            .style("pointer-events", "all");
-
-          var chart = svg.append('g')
-            .attr('class', 'gantt-chart')
-            .attr('height', height + margin.top + margin.bottom)
-            .attr('width', width)
-            .attr("transform", "translate(" + margin.left + ", " + margin.top + ")")
-          ;
-
-        var zoomer = d3.behavior.zoom().x(x).on("zoom", function(){
-          svg.select(".x").transition().call(xAxis);
-
-          var ganttChartGroup = svg.select(".gantt-chart");
-          var gg = ganttChartGroup.selectAll('.gg').data(tasks, keyFunction);
-
-          gg.selectAll('rect').transition().attr("transform", rectTransform)
-        });
-        svg.call(zoomer);
-
-        var elems = chart.selectAll('.chart').data(tasks, keyFunction);
-        var bar = elems.enter()
-          .append("g")
-          .attr('class', 'gg');
-
-        bar.append('rect')
+          bar.enter().append('rect')
           .attr('class', function(d){return 'gantt-rect ' + d.type ;})
-          .attr("y", 0)
-          .attr("transform", rectTransform)
-          .attr("height", function(d) { return y.rangeBand(); })
-          .attr("width", eventWidth)
-           .on("click",function(d){console.log(JSON.stringify(d));});
+          .attr("x", function(d){return scope.x(d.startDate);})
+          .attr("y", function(d){return scope.y(d.taskName);})
+          .attr("height", function(d) { return scope.y.rangeBand(); })
+          .attr("width", function(d){
+            return scope.x(d.endDate) - scope.x(d.startDate);
+          });
 
-          chart.append("g")
-            .attr("class", "x axis")
-            .attr("transform", "translate(0, " + (height - margin.top - margin.bottom) + ")")
-            .transition()
-            .call(xAxis);
+          bar.exit().remove();
+
         }
-      };
 
-      return {
-        restric: 'E',
-        replace: false,
-        scope: {data: '=', visible: '='},
-        link: linker
-      };
-    }]);
+        scope.brush = d3.svg.brush().x(scope.x2).on("brush", display);
+
+        var svg = d3.select(elem[0]).append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom);
+
+        svg.append("defs").append("clipPath")
+        .attr("id", "clip")
+        .append("rect")
+        .attr("width", width)
+        .attr("height", height);
+
+        var focus = svg.append("g").attr("class", "focus")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        var context = svg.append("g").attr("class", "focus")
+        .attr("transform", "translate(" + margin2.left + "," + margin2.top + ")");
+
+        initTimeDomain(scope.tasks);
+        scope.x.domain([scope.timeDomainStart, scope.timeDomainEnd]);
+        scope.y.domain(scope.taskTypes);
+        scope.x2.domain(scope.x.domain());
+        scope.y2.domain(scope.y.domain());
+
+
+        focus.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height + ")")
+        .call(scope.xAxis);
+
+        var bar2 = context.selectAll('.gg').data(scope.tasks, keyFunction).enter()
+        .append("g")
+        .attr('class', 'gg');
+
+        bar2.append('rect')
+        .attr('class', function(d){return 'gantt-rect ' + d.type ;})
+        .attr("y", 0)
+        .attr("transform", function(d){
+          return "translate(" + scope.x2(d.startDate) + "," + scope.y2(d.taskName) + ")";
+        })
+        .attr("height", function(d) { return scope.y2.rangeBand(); })
+        .attr("width", function(d){
+          return scope.x2(d.endDate) - scope.x2(d.startDate);
+        });
+
+        context.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height2 + ")")
+        .call(scope.xAxis2);
+
+        context.append("g")
+        .attr("class", "x brush")
+        .call(scope.brush)
+        .selectAll("rect")
+        .attr("y", -6)
+        .attr("height", height2 + 7);
+
+        display();
+      }
+    };
+
+    return {
+      restric: 'E',
+      replace: false,
+      scope: {data: '=', visible: '='},
+      link: linker
+    };
+  }]);
 })();

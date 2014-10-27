@@ -1,5 +1,4 @@
 //= require angular
-//= require angular-sanitize
 //= require ui-bootstrap-tpls-0.11.2
 //= require gantt-chart-d3
 //
