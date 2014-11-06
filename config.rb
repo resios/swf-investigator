@@ -49,6 +49,10 @@
 
 activate :directory_indexes
 
+activate :deploy do |deploy|
+  deploy.method = :git
+end
+
 set :css_dir, 'assets/stylesheets'
 
 set :js_dir, 'assets/javascripts'
@@ -74,3 +78,4 @@ configure :build do
   # Or use a different image path
   # set :http_prefix, "/Content/images/"
 end
+
