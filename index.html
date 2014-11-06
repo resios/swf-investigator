@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html ng-app='SwfInvestigator'>
+  <head>
+    <title>SWF Investigator</title>
+    <link href="assets/stylesheets/styles.css" rel="stylesheet" type="text/css" media="all" />
+    
+  </head>
+  <body>
+    <nav class='navbar navbar-inverse' role='navigation'>
+      <div class='container'>
+        <div class='navbar-header'>
+          <button class='navbar-toggle' data-target='.navbar-actions-collapse' data-toggle='collapse' type='button'>
+            <span class='sr-only'>Toggle navigation</span>
+            <span class='icon-bar'></span>
+            <span class='icon-bar'></span>
+            <span class='icon-bar'></span>
+          </button>
+          <a class="navbar-brand" href="/">SWF Investigator</a>
+        </div>
+        <div class='collapse navbar-collapse navbar-actions-collapse'>
+          <ul class='nav navbar-nav'>
+            <li class='active'><a href="#">Load Workflow</a></li>
+            <li><a href="#">About</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+    <div class='container'>
+      <div class='container-fluid' ng-controller='MainCtrl'>
+        <div class='jumbotron'>
+          <h1>SWF Investigator</h1>
+          <p>
+            To begin load the JSON serialized workflow history
+          </p>
+          <p>
+            <span class='btn btn-primary btn-lg btn-file'>
+              <span class='glyphicon glyphicon-upload'></span>
+              <input onchange='angular.element(this).scope().loadInput(this.files)' type='file'>Load file</input>
+            </span>
+          </p>
+        </div>
+        <tabset>
+          <tab deselect='chartVisible=false;' heading='Timeline' select='chartVisible=true;'>
+            <div class='history-chart' data='tasks' gantt-chart visible='chartVisible'></div>
+          </tab>
+          <tab heading='Event log'>
+            <div class='panel panel-default'>
+              <div class='panel-heading'>
+                Workflow summary: {{ctx.history.length}} events ({{ctx.inputHistory.length}} bytes)
+              </div>
+              <div class='panel-body'>
+                <div class='input-group'>
+                  <div class='input-group-addon'>Filter by</div>
+                  <input class='form-control' ng-model='search.$' placeholder='Text to match' type='text'>
+                </div>
+                <ul class='list-group'>
+                  <li class='entry list-group-item' href='' ng-click='showDetails = !showDetails' ng-repeat='event in ctx.history | filter:search'>
+                    <div class='list-group-item-heading'>
+                      <span class='caret'></span>
+                      <div swf-event='event.eventType'></div>
+                      <span swf-timestamp='event.eventTimestamp'></span>
+                    </div>
+                    <pre class='list-item-group-text data pre-scrollable' event-view ng-click='$event.stopPropagation();' ng-show='showDetails' obj='event'></pre>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </tab>
+          <tab heading='Activity log'>
+            <div class='panel panel-default'>
+              <div class='panel-heading'>
+                Activity summary: {{activities.length}} activities
+              </div>
+              <div class='panel-body'>
+                <div class='input-group'>
+                  <div class='input-group-addon'>Filter by</div>
+                  <input class='form-control' ng-model='activitySearch.activityType' placeholder='Text to match' type='text'>
+                </div>
+                <ul class='list-group'>
+                  <li class='activity list-group-item' href='' ng-click='showDetails = !showDetails' ng-repeat='activity in activities | filter:activitySearch'>
+                    <div class='list-group-item-heading'>
+                      <span class='caret'></span>
+                      <span>{{activity.activityType.name}}</span>
+                    </div>
+                    <div class='list-item-group-text' ng-click='$event.stopPropagation();' ng-show='showDetails'>
+                      <tabset>
+                        <tab heading='Summary'>
+                          <ul>
+                            <li>Name {{activity.activityType.name}}</li>
+                            <li>Version {{activity.activityType.version}}</li>
+                            <li>Tasklist {{activity.taskList.name}}</li>
+                            <li>Activity worker {{activity.identity}}</li>
+                            <li>Schedule date {{activity.scheduleDate | date:'yyyy-MM-dd HH:mm:ss Z'}}</li>
+                            <li>Start date {{activity.startDate | date:'yyyy-MM-dd HH:mm:ss Z'}}</li>
+                            <li>End date {{activity.endDate | date:'yyyy-MM-dd HH:mm:ss Z'}}</li>
+                          </ul>
+                        </tab>
+                        <tab heading='Input'>
+                          <pre class='data pre-scrollable' event-view obj='activity.input'></pre>
+                        </tab>
+                        <tab heading='Output'>
+                          <pre class='data pre-scrollable' event-view obj='activity.result'></pre>
+                        </tab>
+                      </tabset>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+            </div>
+            <pre class='hidden'>{{activities.length}}
+            {{activities | json}}</pre>
+          </tab>
+        </tabset>
+      </div>
+    </div>
+    <div id='footer'></div>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.4.11/d3.js" type="text/javascript"></script>
+    <script src="assets/javascripts/application.js" type="text/javascript"></script>
+  </body>
+</html>
